@@ -3,10 +3,11 @@
 const $showsList = $("#showsList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
+
 const URL_SHOW_SEARCH = "http://api.tvmaze.com/search/shows";
-const URL_SHOW_ID = "http://api.tvmaze.com/shows"
+const URL_SHOW_ID = "http://api.tvmaze.com/shows/"
 const DEFAULT_IMAGE = "https://store-images.s-microsoft.com/image/apps.65316.13510798887490672.6e1ebb25-96c8-4504-b714-1f7cbca3c5ad.f9514a23-1eb8-4916-a18e-99b1a9817d15?mode=scale&q=90&h=300&w=300";
-// http://api.tvmaze.com/shows/[showid]/episodes // reference
+const URL_EPISODE_SEARCH = "http://api.tvmaze.com/shows/[showid]/episodes"
 
 /** Given a search term, search for tv shows that match that query.
  *
@@ -24,8 +25,6 @@ async function getShowsByTerm(input) {
     `${URL_SHOW_SEARCH}`,
     { params: { q: input}}
   )
-  // console.log(response.data[0].show.id); // TEST
-  console.log(response);
 
   return response.data.map(apiResp => {
 
@@ -52,24 +51,19 @@ function populateShows(shows) {
   let image;
 
   for (let show of shows) {
-    if(show.show.image?.medium === undefined){
-
-    }
-    else{
-      image = show.show.image.medium;
-    }
     // console.log('show', show); // TEST
     // console.log(show.show.image.medium) // TEST
+
     const $show = $(
-        `<div data-show-id="${show.show.id}" class="Show col-md-12 col-lg-6 mb-4">
+        `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
          <div class="media">
            <img
-              src=${image}
+              src=${show.image}
               alt="Bletchly Circle San Francisco"
               class="w-25 me-3">
            <div class="media-body">
-             <h5 class="text-primary">${show.show.name}</h5>
-             <div><small>${show.show.summary}</small></div>
+             <h5 class="text-primary">${show.name}</h5>
+             <div><small>${show.summary}</small></div>
              <button class="btn btn-outline-light btn-sm Show-getEpisodes">
                Episodes
              </button>
@@ -78,7 +72,14 @@ function populateShows(shows) {
        </div>
       `);
 
-    $showsList.append($show);  }
+      $showsList.append($show);
+    }
+
+      $showsList.on('click', function(evt){
+        console.log('btnclick')
+        episodeConstruct(evt);
+      }
+      )
 }
 
 
@@ -99,12 +100,42 @@ $searchForm.on("submit", async function (evt) {
 });
 
 
+
+async function episodeConstruct(evt){
+  const showId = getBtnId(evt);
+  const episodes = await getEpisodesOfShow(showId)
+  console.log('from constructor',episodes)
+}
+
+
 /** Given a show ID, get from API and return (promise) array of episodes:
  *      { id, name, season, number }
  */
 
-// async function getEpisodesOfShow(id) { }
+async function getEpisodesOfShow(id) {
+  const episodes = await axios.get(
+    `${URL_SHOW_ID}${id}/episodes`
+  )
+  console.log('episodes array', episodes)
+  return episodes.data.map(episode => {
+
+    return {
+      id: episode.id,
+      name: episode.name,
+      season: episode.season,
+      number: episode.number
+    };
+  });
+}
+
 
 /** Write a clear docstring for this function... */
 
-// function populateEpisodes(episodes) { }
+function populateEpisodes(episodes) {
+
+}
+
+function getBtnId(evt){
+  const showId = $(evt.target).closest('.Show').data("show-id");
+  return showId
+}
