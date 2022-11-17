@@ -5,6 +5,7 @@ const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
 const URL_SHOW_SEARCH = "http://api.tvmaze.com/search/shows";
 const URL_SHOW_ID = "http://api.tvmaze.com/shows"
+const DEFAULT_IMAGE = "https://store-images.s-microsoft.com/image/apps.65316.13510798887490672.6e1ebb25-96c8-4504-b714-1f7cbca3c5ad.f9514a23-1eb8-4916-a18e-99b1a9817d15?mode=scale&q=90&h=300&w=300";
 // http://api.tvmaze.com/shows/[showid]/episodes // reference
 
 /** Given a search term, search for tv shows that match that query.
@@ -14,6 +15,8 @@ const URL_SHOW_ID = "http://api.tvmaze.com/shows"
  *    (if no image URL given by API, put in a default image URL)
  */
 
+
+//**  getShowsByTerm: async function that gets response based on text in input field from tvmaze API and returns the data array. */
 async function getShowsByTerm(input) {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
 
@@ -21,26 +24,42 @@ async function getShowsByTerm(input) {
     `${URL_SHOW_SEARCH}`,
     { params: { q: input}}
   )
-  // console.log(response.data[0].show.id);
-  return response.data;
+  // console.log(response.data[0].show.id); // TEST
+  console.log(response);
+
+  return response.data.map(apiResp => {
+
+    const show = apiResp.show
+
+    return {
+      id: show.id,
+      name: show.name,
+      summary: show.summary,
+      image: show.image ? show.image.medium : DEFAULT_IMAGE,
+    };
+  });
 }
+
 
 
 /** Given list of shows, create markup for each and to DOM */
 
+//**  populateShows: appends the show vairable of each matching show called by the users input. If the show does not have an image, a placeholder is inserted. */
 function populateShows(shows) {
-  console.log('all shows', shows)
+  // console.log('all shows', shows) // TEST
   $showsList.empty();
+
   let image;
+
   for (let show of shows) {
     if(show.show.image?.medium === undefined){
-      image = "https://store-images.s-microsoft.com/image/apps.65316.13510798887490672.6e1ebb25-96c8-4504-b714-1f7cbca3c5ad.f9514a23-1eb8-4916-a18e-99b1a9817d15?mode=scale&q=90&h=300&w=300"
+
     }
     else{
-      image = show.show.image.medium
+      image = show.show.image.medium;
     }
-    // console.log('show', show);
-    // console.log(show.show.image.medium)
+    // console.log('show', show); // TEST
+    // console.log(show.show.image.medium) // TEST
     const $show = $(
         `<div data-show-id="${show.show.id}" class="Show col-md-12 col-lg-6 mb-4">
          <div class="media">
@@ -63,10 +82,9 @@ function populateShows(shows) {
 }
 
 
-/** Handle search form submission: get shows from API and display.
+/** searchForShowAndDisplay: get shows from API and display.
  *    Hide episodes area (that only gets shown if they ask for episodes)
  */
-
 async function searchForShowAndDisplay() {
   const term = $("#searchForm-term").val();
   const shows = await getShowsByTerm(term);
