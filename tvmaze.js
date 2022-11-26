@@ -3,6 +3,8 @@
 const $showsList = $("#showsList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
+const $myModal = $("#my-modal");
+const $modalBody = $(".modal-body");
 
 const URL_SHOW_SEARCH = "http://api.tvmaze.com/search/shows";
 const URL_SHOW_ID = "http://api.tvmaze.com/shows/";
@@ -10,19 +12,27 @@ const DEFAULT_IMAGE =
   "https://store-images.s-microsoft.com/image/apps.65316.13510798887490672.6e1ebb25-96c8-4504-b714-1f7cbca3c5ad.f9514a23-1eb8-4916-a18e-99b1a9817d15?mode=scale&q=90&h=300&w=300";
 const URL_EPISODE_SEARCH = "http://api.tvmaze.com/shows/[showid]/episodes";
 
-/** Given a search term, search for tv shows that match that query.
- *
- *  Returns (promise) array of show objects: [show, show, ...].
- *    Each show object should contain exactly: {id, name, summary, image}
- *    (if no image URL given by API, put in a default image URL)
+//TODO: Add Docstrings.
+$searchForm.on("submit", async function (evt) {
+  evt.preventDefault();
+  await searchForShowAndDisplay();
+});
+
+/** searchForShowAndDisplay: get shows from API and display.
+ *    Hide episodes area (that only gets shown if they ask for episodes)
  */
+async function searchForShowAndDisplay() {
+  const term = $("#searchForm-term").val();
+  const shows = await getShowsByTerm(term);
+
+  // $episodesArea.hide();
+  populateShows(shows);
+}
 
 //**  getShowsByTerm: async function that gets response based on text in input field from tvmaze API and returns the data array. */
-async function getShowsByTerm(input) {
-  // ADD: Remove placeholder & make request to TVMaze search shows API.
-
+async function getShowsByTerm(term) {
   const response = await axios.get(`${URL_SHOW_SEARCH}`, {
-    params: { q: input },
+    params: { q: term },
   });
 
   return response.data.map((apiResp) => {
@@ -37,19 +47,11 @@ async function getShowsByTerm(input) {
   });
 }
 
-/** Given list of shows, create markup for each and to DOM */
-
 //**  populateShows: appends the show vairable of each matching show called by the users input. If the show does not have an image, a placeholder is inserted. */
 function populateShows(shows) {
-  // console.log('all shows', shows) // TEST
   $showsList.empty();
 
-  let image;
-
   for (let show of shows) {
-    // console.log('show', show); // TEST
-    // console.log(show.show.image.medium) // TEST
-
     const $show = $(
       `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
          <div class="media">
@@ -60,8 +62,10 @@ function populateShows(shows) {
            <div class="media-body">
              <h5 class="text-primary">${show.name}</h5>
              <div><small>${show.summary}</small></div>
-             <button class="btn btn-outline-light btn-sm Show-getEpisodes">
-               Episodes
+             <button class="btn btn-outline-danger btn-sm getEpisodes" data-bs-toggle="modal" data-bs-target="#my-modal"> Episodes
+             </button>
+             <button class="btn btn-outline-success btn-sm Show-Actors">
+               Actors
              </button>
            </div>
          </div>
@@ -72,41 +76,28 @@ function populateShows(shows) {
     $showsList.append($show);
   }
 
-  $showsList.on("click", function (evt) {
+  // $("Show-Actors").on("click", function (e) {
+  //   actorDisplay(e);
+  // });
 
-    episodeConstruct(evt);
+  $(".getEpisodes").on("click", function (e) {
+    episodeConstruct(e);
   });
 }
 
-/** searchForShowAndDisplay: get shows from API and display.
- *    Hide episodes area (that only gets shown if they ask for episodes)
- */
-async function searchForShowAndDisplay() {
-  const term = $("#searchForm-term").val();
-  const shows = await getShowsByTerm(term);
-
-  $episodesArea.hide();
-  populateShows(shows);
-}
-
-$searchForm.on("submit", async function (evt) {
-  evt.preventDefault();
-  await searchForShowAndDisplay();
-});
-
-
-
+//TODO: add docstrings.
 async function episodeConstruct(evt) {
   const showId = getBtnId(evt);
   const episodes = await getEpisodesOfShow(showId);
   populateEpisodes(episodes);
-
 }
 
-/** Given a show ID, get from API and return (promise) array of episodes:
- *      { id, name, season, number }
- */
+//TODO: add docstrings.
+function getBtnId(evt) {
+  return $(evt.target).closest(".Show").data("show-id");
+}
 
+//TODO: adddotrings.
 async function getEpisodesOfShow(id) {
   const episodes = await axios.get(`${URL_SHOW_ID}${id}/episodes`);
 
@@ -120,20 +111,26 @@ async function getEpisodesOfShow(id) {
   });
 }
 
-/** Write a clear docstring for this function... */
-
+//TODO: add docstrings
 function populateEpisodes(episodes) {
 
+  $modalBody.empty();
 
   for (let episode of episodes) {
-    console.log({episode})
     const $newLi = $("<li>");
-    $episodesArea.append($newLi.text(`${episode.name}, Season: ${episode.season}, Number: ${episode.number}`));
+    $modalBody.append(
+      $newLi.text(
+        `${episode.name}, Season: ${episode.season}, Number: ${episode.number}`
+      )
+    )
   }
-  $episodesArea.show();
+  // $episodesArea.show();
 }
 
-function getBtnId(evt) {
-  const showId = $(evt.target).closest(".Show").data("show-id");
-  return showId;
-}
+
+const myModal = document.getElementById('my-modal')
+const myInput = document.querySelector('.modalBody')
+
+myModal.addEventListener('shown.bs.modal', function () {
+  myInput.focus()
+})
